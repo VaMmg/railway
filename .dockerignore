@@ -1,0 +1,11 @@
+node_modules
+.git
+.gitignore
+Dockerfile
+**/node_modules
+**/.next
+**/build
+**/dist
+**/.DS_Store
+**/npm-debug.log
+**/yarn-error.log

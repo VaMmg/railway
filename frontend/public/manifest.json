@@ -1,0 +1,12 @@
+{
+  "name": "Sistema de Créditos",
+  "short_name": "Créditos",
+  "start_url": ".",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "description": "Sistema de Gestión de Créditos",
+  "lang": "es",
+  "dir": "ltr"
+}

@@ -1,0 +1,64 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sistema-credito-backend
+    ports:
+      - "8080:80"
+    environment:
+      - APACHE_DOCUMENT_ROOT=/var/www/html
+      - PHP_MEMORY_LIMIT=512M
+      # Vars de conexión a BD para PHP
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=sistemacredito
+      - DB_USER=app
+      - DB_PASSWORD=app
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sistema-credito-frontend
+    ports:
+      - "3002:80"
+    environment:
+      # Esta URL será usada por el navegador. Apunta al backend publicado en 8080
+      - REACT_APP_API_URL=http://localhost:8080/backend/api/
+    depends_on:
+      - backend
+
+  db:
+    image: mysql:8.0
+    container_name: sistema-credito-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=sistemacredito
+      - MYSQL_USER=app
+      - MYSQL_PASSWORD=app
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./backend/db/init:/docker-entrypoint-initdb.d:ro
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: sistema-credito-phpmyadmin
+    restart: unless-stopped
+    environment:
+      - PMA_HOST=db
+      - PMA_PORT=3306
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+
+volumes:
+  db_data:

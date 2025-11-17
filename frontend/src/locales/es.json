@@ -1,0 +1,253 @@
+{
+  "creditos": {
+    "titulo": "Gestión de Créditos",
+    "nuevo_credito": "Nuevo Crédito",
+    "cronograma": "Cronograma",
+    "reprogramar": "Reprogramar",
+    "reprogramaciones": "Reprogramaciones",
+    "detalle_credito": "Detalle del Crédito",
+    "crear_credito": "Crear Crédito",
+    "editar_credito": "Editar Crédito",
+    "buscar_creditos": "Buscar créditos...",
+    "sin_creditos": "No se encontraron créditos",
+    "loading": "Cargando...",
+    
+    "campos": {
+      "cliente": "Cliente",
+      "monto": "Monto",
+      "plazo_meses": "Plazo (meses)",
+      "tasa_interes": "Tasa de Interés (%)",
+      "fecha_aprobacion": "Fecha de Aprobación",
+      "estado": "Estado",
+      "observaciones": "Observaciones",
+      "fiadores": "Fiadores",
+      "avales": "Avales",
+      "seguros": "Seguros",
+      "fiadores_dnis": "Fiadores (DNIs, separados por coma)",
+      "avales_dnis": "Avales (DNIs, separados por coma)",
+      "seguros_ids": "Seguros (IDs, separados por coma)"
+    },
+    
+    "validaciones": {
+      "campo_requerido": "Este campo es requerido",
+      "monto_invalido": "El monto debe estar entre {min} y {max}",
+      "plazo_invalido": "El plazo debe estar entre {min} y {max} meses",
+      "tasa_invalida": "La tasa debe estar entre {min}% y {max}%",
+      "dni_formato_invalido": "Los DNIs deben tener exactamente {length} dígitos",
+      "dni_duplicado_fiadores": "Hay DNIs duplicados en fiadores",
+      "dni_duplicado_avales": "Hay DNIs duplicados en avales",
+      "dni_en_ambos_roles": "Un DNI no puede estar como fiador y aval a la vez",
+      "cliente_como_fiador": "El cliente no puede ser fiador de su propio crédito",
+      "cliente_como_aval": "El cliente no puede ser aval de su propio crédito",
+      "max_fiadores": "Máximo {max} fiadores permitidos",
+      "max_avales": "Máximo {max} avales permitidos",
+      "max_seguros": "Máximo {max} seguros permitidos",
+      "dni_no_encontrado": "Los siguientes DNIs no fueron encontrados: {dnis}",
+      "seguro_no_encontrado": "Los siguientes seguros no fueron encontrados: {ids}"
+    },
+    
+    "estados": {
+      "pendiente": "Pendiente",
+      "aprobado": "Aprobado",
+      "rechazado": "Rechazado",
+      "desembolsado": "Desembolsado",
+      "cancelado": "Cancelado"
+    },
+    
+    "reprogramacion": {
+      "titulo": "Reprogramar Crédito",
+      "nueva_tasa": "Nueva Tasa de Interés (%)",
+      "nuevo_plazo": "Nuevo Plazo (meses)",
+      "motivo": "Motivo de la Reprogramación",
+      "confirmar": "Confirmar Reprogramación",
+      "cancelar": "Cancelar",
+      "exito": "Crédito reprogramado exitosamente",
+      "error": "Error al reprogramar el crédito"
+    },
+    
+    "cronograma_modal": {
+      "titulo": "Cronograma de Pagos - Crédito #{id}",
+      "numero_cuota": "# Cuota",
+      "fecha_pago": "Fecha de Pago",
+      "monto_total": "Monto Total",
+      "capital": "Capital",
+      "interes": "Interés",
+      "seguros": "Seguros",
+      "estado": "Estado",
+      "sin_cuotas": "No hay cuotas generadas para este crédito"
+    },
+    
+    "detalle_modal": {
+      "titulo": "Detalle del Crédito #{id}",
+      "fiadores_titulo": "Fiadores",
+      "avales_titulo": "Avales", 
+      "seguros_titulo": "Seguros Asociados",
+      "sin_fiadores": "No hay fiadores asociados",
+      "sin_avales": "No hay avales asociados",
+      "sin_seguros": "No hay seguros asociados",
+      "dni": "DNI",
+      "nombres": "Nombres",
+      "tipo_relacion": "Tipo de Relación",
+      "observaciones": "Observaciones",
+      "seguro": "Seguro",
+      "costo": "Costo",
+      "fecha_contratacion": "Fecha de Contratación"
+    },
+    
+    "reprogramaciones_modal": {
+      "titulo": "Reprogramaciones del Crédito #{id}",
+      "sin_reprogramaciones": "No hay reprogramaciones para este crédito",
+      "fecha_reprogramacion": "Fecha",
+      "motivo": "Motivo",
+      "estatus": "Estatus",
+      "ver_detalle": "Ver Detalle",
+      "detalle_titulo": "Detalle de Reprogramación",
+      "numero_cuota": "# Cuota",
+      "fecha_pago": "Fecha de Pago",
+      "monto_total": "Monto Total",
+      "capital": "Capital",
+      "interes": "Interés"
+    },
+    
+    "buscador": {
+      "buscar_persona": "Buscar por DNI o nombre",
+      "buscar_btn": "Buscar",
+      "seleccionados": "Seleccionados",
+      "agregar": "Agregar",
+      "quitar": "Quitar"
+    }
+  },
+  
+  "reportes": {
+    "titulo": "Reportes",
+    "logs_acceso": "Logs de Acceso",
+    "logs_titulo": "Registro de Accesos al Sistema",
+    "filtros": {
+      "limite": "Límite de registros",
+      "usuario_id": "ID de Usuario (opcional)",
+      "aplicar": "Aplicar Filtros"
+    },
+    "tabla": {
+      "id_log": "ID Log",
+      "usuario": "Usuario",
+      "ip": "IP",
+      "navegador": "Navegador",
+      "fecha": "Fecha",
+      "exito": "Éxito"
+    },
+    "sin_logs": "No se encontraron logs de acceso"
+  },
+  
+  "login": {
+    "titulo": "Sistema de Créditos",
+    "subtitulo": "Ingresa tus credenciales para acceder",
+    "usuario": "Usuario",
+    "password": "Contraseña",
+    "iniciar_sesion": "Iniciar Sesión",
+    "iniciando_sesion": "Iniciando sesión...",
+    "bienvenido": "¡Bienvenido al Sistema de Créditos!",
+    "error_conexion": "Error de conexión con el servidor",
+    "verificando_auth": "Verificando autenticación...",
+    "footer": "© 2024 Sistema de Créditos. Todos los derechos reservados.",
+    "validaciones": {
+      "usuario_requerido": "El usuario es requerido",
+      "password_requerida": "La contraseña es requerida",
+      "password_min_length": "La contraseña debe tener al menos 4 caracteres"
+    }
+  },
+  
+  "comunes": {
+    "si": "Sí",
+    "no": "No",
+    "cerrar": "Cerrar",
+    "guardar": "Guardar",
+    "cancelar": "Cancelar",
+    "editar": "Editar",
+    "eliminar": "Eliminar",
+    "buscar": "Buscar",
+    "cargar_mas": "Cargar más",
+    "acciones": "Acciones",
+    "fecha": "Fecha",
+    "total": "Total",
+    "error": "Error",
+    "exito": "Éxito",
+    "cargando": "Cargando..."
+  },
+  
+  "colorSettings": {
+    "title": "Configuración de Colores",
+    "description": "Personaliza los colores de tu sistema",
+    "themes": "Temas",
+    "customColors": "Colores Personalizados",
+    "advanced": "Avanzado",
+    "primary": "Color Primario",
+    "secondary": "Color Secundario",
+    "accent": "Color de Acento",
+    "background": "Fondo",
+    "surface": "Superficie",
+    "text": "Texto",
+    "textSecondary": "Texto Secundario",
+    "success": "Éxito",
+    "warning": "Advertencia",
+    "error": "Error",
+    "info": "Información",
+    "createTheme": "Crear Tema Personalizado",
+    "themeName": "Nombre del tema",
+    "create": "Crear",
+    "cancel": "Cancelar",
+    "resetColors": "Restablecer Colores",
+    "confirmDelete": "¿Estás seguro de que quieres eliminar este tema?",
+    "exportImport": "Exportar/Importar",
+    "exportDescription": "Guarda o carga configuraciones de temas",
+    "exportTheme": "Exportar Tema Actual",
+    "importTheme": "Importar Tema",
+    "importError": "Error al importar el tema",
+    "preview": "Vista Previa",
+    "previewDescription": "Visualiza cómo se ven los colores actuales"
+  },
+  
+  "backupSettings": {
+    "title": "Configuración de Respaldos",
+    "description": "Gestiona los respaldos automáticos y manuales de la base de datos",
+    "lastBackup": "Último Respaldo",
+    "nextBackup": "Próximo Respaldo",
+    "autoBackup": "Respaldo Automático",
+    "noBackups": "Sin respaldos",
+    "disabled": "Deshabilitado",
+    "enabled": "Habilitado",
+    "quickActions": "Acciones Rápidas",
+    "createBackup": "Crear Respaldo",
+    "creating": "Creando...",
+    "refresh": "Actualizar",
+    "configuration": "Configuración",
+    "enableAutoBackup": "Habilitar respaldos automáticos",
+    "intervalDays": "Intervalo (días)",
+    "backupTime": "Hora del respaldo",
+    "maxBackups": "Máximo de respaldos a mantener",
+    "enableCompression": "Habilitar compresión",
+    "saveConfig": "Guardar Configuración",
+    "history": "Historial de Respaldos",
+    "date": "Fecha",
+    "type": "Tipo",
+    "status": "Estado",
+    "size": "Tamaño",
+    "duration": "Duración",
+    "actions": "Acciones",
+    "automatic": "Automático",
+    "manual": "Manual",
+    "success": "Éxito",
+    "error": "Error",
+    "download": "Descargar",
+    "restore": "Restaurar",
+    "noBackupsDescription": "Aún no se han creado respaldos de la base de datos",
+    "creatingBackup": "Creando respaldo...",
+    "backupSuccess": "Respaldo creado exitosamente",
+    "backupError": "Error al crear el respaldo",
+    "downloadStarted": "Descarga iniciada",
+    "confirmRestore": "¿Estás seguro de que quieres restaurar este respaldo? Esta acción no se puede deshacer.",
+    "restoringBackup": "Restaurando respaldo...",
+    "restoreSuccess": "Respaldo restaurado exitosamente",
+    "configSaved": "Configuración de respaldos guardada",
+    "configError": "Error al guardar la configuración"
+  }
+}

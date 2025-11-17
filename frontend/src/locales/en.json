@@ -1,0 +1,176 @@
+{
+  "creditos": {
+    "titulo": "Credit Management",
+    "nuevo_credito": "New Credit",
+    "cronograma": "Payment Schedule",
+    "reprogramar": "Reschedule",
+    "reprogramaciones": "Reschedulings",
+    "detalle_credito": "Credit Details",
+    "crear_credito": "Create Credit",
+    "editar_credito": "Edit Credit",
+    "buscar_creditos": "Search credits...",
+    "sin_creditos": "No credits found",
+    "loading": "Loading...",
+    
+    "campos": {
+      "cliente": "Client",
+      "monto": "Amount",
+      "plazo_meses": "Term (months)",
+      "tasa_interes": "Interest Rate (%)",
+      "fecha_aprobacion": "Approval Date",
+      "estado": "Status",
+      "observaciones": "Observations",
+      "fiadores": "Guarantors",
+      "avales": "Co-signers",
+      "seguros": "Insurance",
+      "fiadores_dnis": "Guarantors (IDs, comma separated)",
+      "avales_dnis": "Co-signers (IDs, comma separated)",
+      "seguros_ids": "Insurance (IDs, comma separated)"
+    },
+    
+    "validaciones": {
+      "campo_requerido": "This field is required",
+      "monto_invalido": "Amount must be between {min} and {max}",
+      "plazo_invalido": "Term must be between {min} and {max} months",
+      "tasa_invalida": "Rate must be between {min}% and {max}%",
+      "dni_formato_invalido": "IDs must have exactly {length} digits",
+      "dni_duplicado_fiadores": "There are duplicate IDs in guarantors",
+      "dni_duplicado_avales": "There are duplicate IDs in co-signers",
+      "dni_en_ambos_roles": "An ID cannot be both guarantor and co-signer",
+      "cliente_como_fiador": "Client cannot be guarantor of their own credit",
+      "cliente_como_aval": "Client cannot be co-signer of their own credit",
+      "max_fiadores": "Maximum {max} guarantors allowed",
+      "max_avales": "Maximum {max} co-signers allowed",
+      "max_seguros": "Maximum {max} insurance allowed",
+      "dni_no_encontrado": "The following IDs were not found: {dnis}",
+      "seguro_no_encontrado": "The following insurance were not found: {ids}"
+    },
+    
+    "estados": {
+      "pendiente": "Pending",
+      "aprobado": "Approved",
+      "rechazado": "Rejected",
+      "desembolsado": "Disbursed",
+      "cancelado": "Cancelled"
+    },
+    
+    "reprogramacion": {
+      "titulo": "Reschedule Credit",
+      "nueva_tasa": "New Interest Rate (%)",
+      "nuevo_plazo": "New Term (months)",
+      "motivo": "Rescheduling Reason",
+      "confirmar": "Confirm Rescheduling",
+      "cancelar": "Cancel",
+      "exito": "Credit rescheduled successfully",
+      "error": "Error rescheduling credit"
+    },
+    
+    "cronograma_modal": {
+      "titulo": "Payment Schedule - Credit #{id}",
+      "numero_cuota": "# Installment",
+      "fecha_pago": "Payment Date",
+      "monto_total": "Total Amount",
+      "capital": "Principal",
+      "interes": "Interest",
+      "seguros": "Insurance",
+      "estado": "Status",
+      "sin_cuotas": "No installments generated for this credit"
+    },
+    
+    "detalle_modal": {
+      "titulo": "Credit Details #{id}",
+      "fiadores_titulo": "Guarantors",
+      "avales_titulo": "Co-signers", 
+      "seguros_titulo": "Associated Insurance",
+      "sin_fiadores": "No associated guarantors",
+      "sin_avales": "No associated co-signers",
+      "sin_seguros": "No associated insurance",
+      "dni": "ID",
+      "nombres": "Names",
+      "tipo_relacion": "Relationship Type",
+      "observaciones": "Observations",
+      "seguro": "Insurance",
+      "costo": "Cost",
+      "fecha_contratacion": "Contract Date"
+    },
+    
+    "reprogramaciones_modal": {
+      "titulo": "Credit Reschedulings #{id}",
+      "sin_reprogramaciones": "No reschedulings for this credit",
+      "fecha_reprogramacion": "Date",
+      "motivo": "Reason",
+      "estatus": "Status",
+      "ver_detalle": "View Details",
+      "detalle_titulo": "Rescheduling Details",
+      "numero_cuota": "# Installment",
+      "fecha_pago": "Payment Date",
+      "monto_total": "Total Amount",
+      "capital": "Principal",
+      "interes": "Interest"
+    },
+    
+    "buscador": {
+      "buscar_persona": "Search by ID or name",
+      "buscar_btn": "Search",
+      "seleccionados": "Selected",
+      "agregar": "Add",
+      "quitar": "Remove"
+    }
+  },
+  
+  "reportes": {
+    "titulo": "Reports",
+    "logs_acceso": "Access Logs",
+    "logs_titulo": "System Access Log",
+    "filtros": {
+      "limite": "Record limit",
+      "usuario_id": "User ID (optional)",
+      "aplicar": "Apply Filters"
+    },
+    "tabla": {
+      "id_log": "Log ID",
+      "usuario": "User",
+      "ip": "IP",
+      "navegador": "Browser",
+      "fecha": "Date",
+      "exito": "Success"
+    },
+    "sin_logs": "No access logs found"
+  },
+  
+  "login": {
+    "titulo": "Credit Management System",
+    "subtitulo": "Enter your credentials to access",
+    "usuario": "Username",
+    "password": "Password",
+    "iniciar_sesion": "Sign In",
+    "iniciando_sesion": "Signing in...",
+    "bienvenido": "Welcome to Credit Management System!",
+    "error_conexion": "Connection error with server",
+    "verificando_auth": "Verifying authentication...",
+    "footer": "© 2024 Credit Management System. All rights reserved.",
+    "validaciones": {
+      "usuario_requerido": "Username is required",
+      "password_requerida": "Password is required",
+      "password_min_length": "Password must be at least 4 characters"
+    }
+  },
+  
+  "comunes": {
+    "si": "Yes",
+    "no": "No",
+    "cerrar": "Close",
+    "guardar": "Save",
+    "cancelar": "Cancel",
+    "editar": "Edit",
+    "eliminar": "Delete",
+    "buscar": "Search",
+    "cargar_mas": "Load more",
+    "acciones": "Actions",
+    "fecha": "Date",
+    "total": "Total",
+    "error": "Error",
+    "exito": "Success",
+    "cargando": "Loading..."
+  }
+}

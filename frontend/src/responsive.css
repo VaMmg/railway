@@ -1,0 +1,236 @@
+/* ===== RESPONSIVE STYLES FOR MOBILE DEVICES ===== */
+
+/* Mobile First - Base styles for mobile */
+@media (max-width: 768px) {
+  /* General Layout */
+  body {
+    font-size: 14px;
+  }
+
+  /* Sidebar adjustments */
+  .sidebar {
+    width: 100%;
+    position: fixed;
+    left: -100%;
+    top: 0;
+    height: 100vh;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  /* Main content with sidebar */
+  .main-content {
+    margin-left: 0 !important;
+    padding: 1rem !important;
+  }
+
+  /* Mobile menu button */
+  .mobile-menu-btn {
+    display: flex !important;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 999;
+    background: white;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  /* Page headers */
+  .page-header h1,
+  .cajas-header h1,
+  .dashboard-header h1 {
+    font-size: 1.5rem !important;
+  }
+
+  /* Cards and containers */
+  .card,
+  .caja-principal-section,
+  .summary-card {
+    border-radius: 8px;
+  }
+
+  /* Tables */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table {
+    min-width: 600px;
+    font-size: 0.75rem;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.5rem 0.25rem;
+    white-space: nowrap;
+  }
+
+  /* Modals */
+  .modal-content {
+    max-width: 100%;
+    margin: 0;
+    border-radius: 0;
+    max-height: 100vh;
+    height: 100vh;
+  }
+
+  .modal-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .modal-body {
+    padding: 1rem;
+  }
+
+  /* Forms */
+  .grid-cols-2,
+  .grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .btn-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-group .btn {
+    width: 100%;
+  }
+
+  /* Stats and summary cards */
+  .stats-grid,
+  .cajas-summary {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem;
+  }
+
+  /* Filters */
+  .filters-row,
+  .filtros-form {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem;
+  }
+
+  /* Action buttons */
+  .action-buttons {
+    flex-wrap: wrap;
+  }
+
+  /* Empty states */
+  .empty-state,
+  .placeholder-page {
+    padding: 2rem 1rem;
+  }
+
+  /* Charts */
+  .charts-section {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Pagination */
+  .pagination {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .main-content {
+    margin-left: 200px;
+    padding: 1.5rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .charts-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  html {
+    font-size: 14px;
+  }
+
+  .page-header h1 {
+    font-size: 1.25rem !important;
+  }
+
+  .stat-number {
+    font-size: 1.25rem !important;
+  }
+
+  .summary-card {
+    padding: 0.75rem;
+  }
+
+  .modal-header,
+  .modal-footer {
+    padding: 0.75rem;
+  }
+
+  .btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* Landscape mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .modal-content {
+    max-height: 95vh;
+  }
+
+  .sidebar {
+    width: 250px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  .btn,
+  .btn-icon,
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better spacing for touch */
+  .action-buttons {
+    gap: 0.5rem;
+  }
+
+  /* Prevent text selection on buttons */
+  button,
+  .btn {
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+}
