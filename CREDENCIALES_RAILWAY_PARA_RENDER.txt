@@ -1,0 +1,85 @@
+═══════════════════════════════════════════════════════════════
+  CREDENCIALES DE RAILWAY MYSQL PARA CONFIGURAR EN RENDER
+═══════════════════════════════════════════════════════════════
+
+INSTRUCCIONES:
+1. Ve a tu proyecto en Railway: https://railway.app
+2. Click en el servicio "MySQL"
+3. Ve a la pestaña "Variables"
+4. Copia los valores que aparecen ahí y pégalos aquí abajo
+5. Luego usa estos valores en Render.com
+
+───────────────────────────────────────────────────────────────
+
+VARIABLES QUE NECESITAS DE RAILWAY:
+
+DB_HOST (MYSQLHOST en Railway):
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  [Pega aquí el valor de MYSQLHOST]                         │
+│  Ejemplo: mysql.railway.internal                           │
+│  o: viaduct.proxy.rlwy.net                                 │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+DB_PORT (MYSQLPORT en Railway):
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  [Pega aquí el valor de MYSQLPORT]                         │
+│  Normalmente es: 3306                                       │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+DB_NAME (MYSQLDATABASE en Railway):
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  [Pega aquí el valor de MYSQLDATABASE]                     │
+│  Normalmente es: railway                                    │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+DB_USER (MYSQLUSER en Railway):
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  [Pega aquí el valor de MYSQLUSER]                         │
+│  Normalmente es: root                                       │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+DB_PASSWORD (MYSQLPASSWORD en Railway):
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  [Pega aquí el valor de MYSQLPASSWORD]                     │
+│  Es una cadena larga y aleatoria                           │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+───────────────────────────────────────────────────────────────
+
+⚠️ IMPORTANTE:
+
+Si el MYSQLHOST contiene "mysql.railway.internal", necesitas usar
+la URL PÚBLICA en su lugar. Busca en Railway:
+
+- MYSQL_PUBLIC_URL o
+- MYSQL_URL
+
+Y extrae el host de ahí. Ejemplo:
+mysql://root:password@viaduct.proxy.rlwy.net:12345/railway
+                      ^^^^^^^^^^^^^^^^^^^^^^^^
+                      Este es el host público
+
+───────────────────────────────────────────────────────────────
+
+CÓMO USAR EN RENDER:
+
+Una vez que tengas todos los valores arriba, ve a Render.com y
+en la sección "Environment Variables" agrega:
+
+Key: DB_HOST       Value: [el host que copiaste]
+Key: DB_PORT       Value: 3306
+Key: DB_NAME       Value: railway
+Key: DB_USER       Value: root
+Key: DB_PASSWORD   Value: [la contraseña que copiaste]
+
+═══════════════════════════════════════════════════════════════
