@@ -16,15 +16,25 @@ try {
     $stmt->execute(['testuser']);
     
     if ($stmt->fetch()) {
-        // Actualizar contraseña del usuario existente
-        $stmt = $pdo->prepare("UPDATE usuarios SET pwd = ? WHERE usuario = ?");
+        // Actualizar contraseña y asegurar que esté activo
+        $stmt = $pdo->prepare("UPDATE usuarios SET pwd = ?, estado = 'Activo' WHERE usuario = ?");
         $stmt->execute([$hashedPassword, 'testuser']);
-        $message = "Usuario 'testuser' actualizado";
+        $message = "Usuario 'testuser' actualizado y activado";
     } else {
+        // Primero verificar si existe una persona con ese DNI, si no, crearla
+        $stmt = $pdo->prepare("SELECT dni FROM personas WHERE dni = ?");
+        $stmt->execute(['10000003']);
+        
+        if (!$stmt->fetch()) {
+            // Crear persona
+            $stmt = $pdo->prepare("INSERT INTO personas (dni, nombres, apellido_paterno, apellido_materno, telefono, direccion) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute(['10000003', 'Usuario', 'Test', 'Prueba', '999999999', 'Dirección Test']);
+        }
+        
         // Crear nuevo usuario
         $stmt = $pdo->prepare("INSERT INTO usuarios (id_rol, dni_persona, usuario, pwd, estado, fecha_creacion) VALUES (?, ?, ?, ?, ?, NOW())");
         $stmt->execute([1, '10000003', 'testuser', $hashedPassword, 'Activo']);
-        $message = "Usuario 'testuser' creado";
+        $message = "Usuario 'testuser' creado exitosamente";
     }
     
     echo json_encode([
