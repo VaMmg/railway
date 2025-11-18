@@ -6,16 +6,21 @@ RUN docker-php-ext-install pdo pdo_mysql mysqli
 # Habilitar mod_rewrite y mod_headers
 RUN a2enmod rewrite headers
 
-# Copiar el backend al contenedor
+# Configurar Apache
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
+    echo "<Directory /var/www/html>\n    Options Indexes FollowSymLinks\n    AllowOverride All\n    Require all granted\n</Directory>" >> /etc/apache2/apache2.conf
+
+# Limpiar directorio por defecto
+RUN rm -rf /var/www/html/*
+
+# Copiar archivos del backend
 WORKDIR /var/www/html
-COPY backend/ /var/www/html/
+COPY backend/ .
 
-# Configuración de Apache para permitir .htaccess y reescrituras
-RUN sed -ri -e 's!/var/www/html!/var/www/html!g' /etc/apache2/sites-available/000-default.conf && \
-    echo "<Directory /var/www/html>\n    AllowOverride All\n    Require all granted\n</Directory>" >> /etc/apache2/apache2.conf
-
-# Configurar PHP para producción
-RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" || true
+# Verificar que los archivos se copiaron (para debug)
+RUN ls -la /var/www/html/ && \
+    echo "=== Archivos copiados ===" && \
+    ls -la /var/www/html/*.php || echo "No hay archivos PHP en raiz"
 
 # Permisos
 RUN chown -R www-data:www-data /var/www/html && \
