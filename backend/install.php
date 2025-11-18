@@ -21,92 +21,101 @@ header('Content-Type: text/html; charset=utf-8');
     
     <?php
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        echo "<h2>Instalando base de datos...</h2>";
+        echo "<h2>Instalando base de datos completa...</h2>";
+        echo "<p class='info'>Esto puede tomar 2-3 minutos, por favor espera...</p>";
+        flush();
+        
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
         
         require_once __DIR__ . '/config/conexion.php';
         
         try {
             $pdo = getPDO();
             echo "<p class='success'>✓ Conectado a la base de datos</p>";
+            flush();
             
-            // SQL simplificado
-            $sql = "
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id_usuario INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                nombre VARCHAR(100) NOT NULL,
-                apellido VARCHAR(100),
-                email VARCHAR(100),
-                rol ENUM('admin', 'gerente', 'cajero') DEFAULT 'cajero',
-                activo BOOLEAN DEFAULT TRUE,
-                fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
+            // Leer el archivo SQL completo
+            $sqlFile = __DIR__ . '/sistema_creditos2.sql';
             
-            CREATE TABLE IF NOT EXISTS personas (
-                id_persona INT AUTO_INCREMENT PRIMARY KEY,
-                tipo_documento ENUM('DNI', 'CE', 'RUC', 'PASAPORTE') DEFAULT 'DNI',
-                numero_documento VARCHAR(20) UNIQUE NOT NULL,
-                nombres VARCHAR(100) NOT NULL,
-                apellido_paterno VARCHAR(100),
-                apellido_materno VARCHAR(100),
-                fecha_nacimiento DATE,
-                telefono VARCHAR(20),
-                email VARCHAR(100),
-                direccion TEXT,
-                activo BOOLEAN DEFAULT TRUE,
-                fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
+            if (!file_exists($sqlFile)) {
+                throw new Exception("No se encontró el archivo sistema_creditos2.sql");
+            }
             
-            CREATE TABLE IF NOT EXISTS clientes (
-                id_cliente INT AUTO_INCREMENT PRIMARY KEY,
-                id_persona INT NOT NULL,
-                codigo_cliente VARCHAR(20) UNIQUE,
-                calificacion ENUM('A', 'B', 'C', 'D') DEFAULT 'C',
-                limite_credito DECIMAL(10,2) DEFAULT 0,
-                observaciones TEXT,
-                activo BOOLEAN DEFAULT TRUE,
-                fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (id_persona) REFERENCES personas(id_persona)
-            );
+            echo "<p class='info'>Leyendo archivo SQL...</p>";
+            flush();
             
-            CREATE TABLE IF NOT EXISTS creditos (
-                id_credito INT AUTO_INCREMENT PRIMARY KEY,
-                id_cliente INT NOT NULL,
-                monto_total DECIMAL(10,2) NOT NULL,
-                tasa_interes DECIMAL(5,2) DEFAULT 0,
-                numero_cuotas INT NOT NULL,
-                monto_cuota DECIMAL(10,2) NOT NULL,
-                fecha_desembolso DATE NOT NULL,
-                estado ENUM('pendiente', 'aprobado', 'rechazado', 'activo', 'pagado', 'vencido') DEFAULT 'pendiente',
-                observaciones TEXT,
-                fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente)
-            );
-            ";
+            $sql = file_get_contents($sqlFile);
+            echo "<p class='success'>✓ Archivo leído (" . number_format(strlen($sql)) . " bytes)</p>";
+            flush();
             
-            $pdo->exec($sql);
-            echo "<p class='success'>✓ Tablas creadas correctamente</p>";
+            echo "<p class='info'>Ejecutando SQL (esto puede tomar tiempo)...</p>";
+            flush();
             
-            // Insertar usuario admin
-            $passwordHash = password_hash('admin123', PASSWORD_DEFAULT);
-            $pdo->exec("INSERT IGNORE INTO usuarios (username, password, nombre, apellido, email, rol) 
-                       VALUES ('admin', '$passwordHash', 'Administrador', 'Sistema', 'admin@sistema.com', 'admin')");
+            // Dividir por punto y coma y ejecutar
+            $statements = explode(';', $sql);
+            $total = count($statements);
+            $executed = 0;
+            $errors = 0;
             
-            echo "<p class='success'>✓ Usuario administrador creado</p>";
-            echo "<div class='info'>";
-            echo "<h3>Credenciales de acceso:</h3>";
-            echo "<pre>";
-            echo "Usuario: admin\n";
-            echo "Contraseña: admin123\n";
-            echo "</pre>";
-            echo "</div>";
+            foreach ($statements as $index => $statement) {
+                $statement = trim($statement);
+                
+                if (empty($statement) || substr($statement, 0, 2) === '--' || substr($statement, 0, 2) === '/*') {
+                    continue;
+                }
+                
+                try {
+                    $pdo->exec($statement);
+                    $executed++;
+                    
+                    if ($executed % 200 == 0) {
+                        echo "<p class='info'>Progreso: $executed statements ejecutados...</p>";
+                        flush();
+                    }
+                } catch (PDOException $e) {
+                    $msg = $e->getMessage();
+                    if (strpos($msg, 'already exists') === false && 
+                        strpos($msg, 'Duplicate') === false) {
+                        $errors++;
+                    }
+                }
+            }
             
-            echo "<p class='success'><strong>¡Instalación completada exitosamente!</strong></p>";
-            echo "<p>Ahora puedes <a href='https://triumphant-laughter-production-up.railway.app'>iniciar sesión en tu aplicación</a></p>";
+            echo "<p class='success'>✓ SQL ejecutado: $executed statements</p>";
+            if ($errors > 0) {
+                echo "<p class='info'>Advertencias ignoradas: $errors</p>";
+            }
+            flush();
+            
+            // Verificar tablas
+            $tables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
+            echo "<p class='success'>✓ Tablas creadas: " . count($tables) . "</p>";
+            
+            if (count($tables) > 0) {
+                echo "<h3>Primeras 10 tablas:</h3><ul>";
+                foreach (array_slice($tables, 0, 10) as $table) {
+                    try {
+                        $count = $pdo->query("SELECT COUNT(*) FROM `$table`")->fetchColumn();
+                        echo "<li>$table: $count registros</li>";
+                    } catch (Exception $e) {
+                        echo "<li>$table</li>";
+                    }
+                }
+                echo "</ul>";
+                
+                if (count($tables) > 10) {
+                    echo "<p>... y " . (count($tables) - 10) . " tablas más</p>";
+                }
+            }
+            
+            echo "<p class='success'><strong>¡Base de datos importada exitosamente!</strong></p>";
+            echo "<p>Ahora puedes <a href='https://triumphant-laughter-production-up.railway.app' target='_blank'>iniciar sesión en tu aplicación</a></p>";
+            echo "<p class='info'>Usa las credenciales que tenías en tu sistema local.</p>";
             
         } catch (Exception $e) {
             echo "<p class='error'>✗ Error: " . $e->getMessage() . "</p>";
+            echo "<pre>" . $e->getTraceAsString() . "</pre>";
         }
     } else {
         ?>
