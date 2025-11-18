@@ -1,11 +1,16 @@
 <?php
 // Script temporal para importar base de datos a Railway
+// Ejecuta este archivo localmente: php import_to_railway.php
 
 $host = 'switchback.proxy.rlwy.net';
 $port = 43047;
 $dbname = 'railway';
 $user = 'root';
 $password = 'BnMtNy1HCVWAn1ZCopQxIecExZPntYkn';
+
+// Aumentar tiempo de ejecución
+set_time_limit(300);
+ini_set('memory_limit', '512M');
 
 echo "Conectando a Railway MySQL...\n";
 
