@@ -16,9 +16,9 @@ try {
     $stmt->execute(['10000003']);
     
     if (!$stmt->fetch()) {
-        // Crear persona
-        $stmt = $pdo->prepare("INSERT INTO personas (dni, nombres, apellido_paterno, apellido_materno, telefono, direccion) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute(['10000003', 'Usuario', 'Test', 'Prueba', '999999999', 'Dirección Test']);
+        // Crear persona (solo con campos básicos)
+        $stmt = $pdo->prepare("INSERT INTO personas (dni, nombres, apellido_paterno, apellido_materno) VALUES (?, ?, ?, ?)");
+        $stmt->execute(['10000003', 'Usuario', 'Test', 'Prueba']);
         $personaCreada = true;
     } else {
         $personaCreada = false;
