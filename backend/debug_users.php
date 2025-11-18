@@ -8,7 +8,7 @@ try {
     $pdo = getPDO();
     
     // Obtener todos los usuarios
-    $stmt = $pdo->query("SELECT id_usuario, usuario, nombre, activo FROM usuarios");
+    $stmt = $pdo->query("SELECT * FROM usuarios");
     $usuarios = $stmt->fetchAll();
     
     echo json_encode([
