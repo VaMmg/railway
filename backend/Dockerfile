@@ -8,7 +8,7 @@ RUN a2enmod rewrite headers
 
 # Copiar el backend al contenedor
 WORKDIR /var/www/html
-COPY . /var/www/html/backend
+COPY . /var/www/html/
 
 # Configuración de Apache para permitir .htaccess y reescrituras
 RUN sed -ri -e 's!/var/www/html!/var/www/html!g' /etc/apache2/sites-available/000-default.conf && \
