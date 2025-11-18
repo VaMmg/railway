@@ -1,5 +1,6 @@
 FROM php:8.2-apache
 
+# Sistema de Creditos - Backend API
 # Instalar extensiones necesarias
 RUN docker-php-ext-install pdo pdo_mysql mysqli
 
