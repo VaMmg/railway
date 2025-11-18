@@ -2,22 +2,27 @@
 // BACKEND/config/cors.php
 
 function setCorsHeaders() {
-    // Permitir múltiples orígenes para desarrollo
-    $allowed_origins = [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://localhost:3002',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:3002',
-        'http://localhost'
-    ];
-    
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
     
-    if (in_array($origin, $allowed_origins)) {
+    // Si está en Railway o variable de entorno lo permite, aceptar cualquier origen
+    if (getenv('RAILWAY_ENVIRONMENT') || getenv('CORS_ALLOW_ALL')) {
         header("Access-Control-Allow-Origin: $origin");
     } else {
-        header("Access-Control-Allow-Origin: http://localhost:3000");
+        // Permitir múltiples orígenes para desarrollo local
+        $allowed_origins = [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://localhost:3002',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:3002',
+            'http://localhost'
+        ];
+        
+        if (in_array($origin, $allowed_origins)) {
+            header("Access-Control-Allow-Origin: $origin");
+        } else {
+            header("Access-Control-Allow-Origin: http://localhost:3000");
+        }
     }
     
     header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
