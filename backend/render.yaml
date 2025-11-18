@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: sistema-creditos-backend
+    env: php
+    buildCommand: composer install --no-dev --optimize-autoloader || echo "No composer.json found"
+    startCommand: php -S 0.0.0.0:$PORT -t .
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 3306
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false

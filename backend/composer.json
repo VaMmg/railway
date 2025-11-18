@@ -1,0 +1,14 @@
+{
+  "name": "sistema-creditos/backend",
+  "description": "Backend API para Sistema de Créditos",
+  "type": "project",
+  "require": {
+    "php": ">=7.4"
+  },
+  "require-dev": {},
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  }
+}
