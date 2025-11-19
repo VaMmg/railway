@@ -63,6 +63,7 @@ function handleGet() {
         $sql = "
             SELECT c.id_cliente, c.ingreso_mensual, c.gasto_mensual, c.ocupacion, 
                    c.empresa_trabajo, c.tiempo_trabajo, c.estado_cliente, c.fecha_registro,
+                   c.usuario_creacion,
                    p.nombres, p.apellido_paterno, p.apellido_materno, p.dni,
                    co.correo1 AS correo_principal, con.numero1 AS numero_principal
             FROM clientes c
@@ -154,10 +155,10 @@ function handlePost() {
         $clientSql = "
             INSERT INTO clientes (dni_persona, ingreso_mensual, gasto_mensual, ocupacion,
                                 empresa_trabajo, tiempo_trabajo, referencias_personales, 
-                                fecha_registro, estado_cliente)
+                                fecha_registro, estado_cliente, usuario_creacion)
             VALUES (:dni_persona, :ingreso_mensual, :gasto_mensual, :ocupacion,
                     :empresa_trabajo, :tiempo_trabajo, :referencias_personales,
-                    NOW(), 'Activo')
+                    NOW(), 'Activo', :usuario_creacion)
         ";
         $clientStmt = $pdo->prepare($clientSql);
         $clientStmt->execute([
@@ -167,7 +168,8 @@ function handlePost() {
             ':ocupacion' => $input['tipo_contrato'] ?? 'Empleado',
             ':empresa_trabajo' => $input['empresa_trabajo'] ?? '',
             ':tiempo_trabajo' => $input['antiguedad_laboral'] ? $input['antiguedad_laboral'] . ' años' : '0 años',
-            ':referencias_personales' => $input['referencias_personales'] ?? ''
+            ':referencias_personales' => $input['referencias_personales'] ?? '',
+            ':usuario_creacion' => $user['id_usuario']
         ]);
         
         $clienteId = $pdo->lastInsertId();
