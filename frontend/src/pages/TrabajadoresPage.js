@@ -37,7 +37,7 @@ const TrabajadoresPage = () => {
 
   // Obtener clientes de un trabajador específico
   const getClientesPorTrabajador = (idTrabajador) => {
-    return clientes.filter(c => c.id_usuario === idTrabajador);
+    return clientes.filter(c => c.usuario_creacion === idTrabajador);
   };
 
   const toggleTrabajador = (idTrabajador) => {
