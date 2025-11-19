@@ -65,7 +65,11 @@ function handleGet() {
                    c.empresa_trabajo, c.tiempo_trabajo, c.estado_cliente, c.fecha_registro,
                    c.usuario_creacion,
                    p.nombres, p.apellido_paterno, p.apellido_materno, p.dni,
-                   co.correo1 AS correo_principal, con.numero1 AS numero_principal
+                   co.correo1 AS correo_principal, con.numero1 AS numero_principal,
+                   con.numero1 AS telefono,
+                   (SELECT COUNT(*) FROM creditos cr WHERE cr.id_cliente = c.id_cliente AND cr.estado_credito IN ('Aprobado', 'Vigente')) AS creditos_activos,
+                   (SELECT COALESCE(SUM(cr.monto_aprobado - COALESCE((SELECT SUM(p.monto_pagado) FROM pagos p WHERE p.id_credito = cr.id_credito), 0)), 0) 
+                    FROM creditos cr WHERE cr.id_cliente = c.id_cliente AND cr.estado_credito IN ('Aprobado', 'Vigente')) AS total_deuda
             FROM clientes c
             INNER JOIN personas p ON c.dni_persona = p.dni
             LEFT JOIN correos co ON p.dni = co.dni_persona
