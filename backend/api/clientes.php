@@ -61,7 +61,8 @@ function handleGet() {
         $offset = ($page - 1) * $limit;
         
         $sql = "
-            SELECT c.id_cliente, c.ingreso_mensual, c.gasto_mensual, c.estado, c.fecha_registro, c.id_usuario,
+            SELECT c.id_cliente, c.ingreso_mensual, c.gasto_mensual, c.ocupacion, 
+                   c.empresa_trabajo, c.tiempo_trabajo, c.estado_cliente, c.fecha_registro,
                    p.nombres, p.apellido_paterno, p.apellido_materno, p.dni,
                    co.correo1 AS correo_principal, con.numero1 AS numero_principal
             FROM clientes c
@@ -151,19 +152,22 @@ function handlePost() {
         
         // Insertar cliente
         $clientSql = "
-            INSERT INTO clientes (dni_persona, ingreso_mensual, gasto_mensual, tipo_contrato,
-                                antiguedad_laboral, estado, fecha_registro, id_usuario)
-            VALUES (:dni_persona, :ingreso_mensual, :gasto_mensual, :tipo_contrato,
-                    :antiguedad_laboral, 'Activo', NOW(), :id_usuario)
+            INSERT INTO clientes (dni_persona, ingreso_mensual, gasto_mensual, ocupacion,
+                                empresa_trabajo, tiempo_trabajo, referencias_personales, 
+                                fecha_registro, estado_cliente)
+            VALUES (:dni_persona, :ingreso_mensual, :gasto_mensual, :ocupacion,
+                    :empresa_trabajo, :tiempo_trabajo, :referencias_personales,
+                    NOW(), 'Activo')
         ";
         $clientStmt = $pdo->prepare($clientSql);
         $clientStmt->execute([
             ':dni_persona' => $input['dni'],
             ':ingreso_mensual' => $input['ingreso_mensual'],
             ':gasto_mensual' => $input['gasto_mensual'] ?? 0,
-            ':tipo_contrato' => $input['tipo_contrato'] ?? 'Indefinido',
-            ':antiguedad_laboral' => $input['antiguedad_laboral'] ?? 0,
-            ':id_usuario' => $user['id']
+            ':ocupacion' => $input['tipo_contrato'] ?? 'Empleado',
+            ':empresa_trabajo' => $input['empresa_trabajo'] ?? '',
+            ':tiempo_trabajo' => $input['antiguedad_laboral'] ? $input['antiguedad_laboral'] . ' años' : '0 años',
+            ':referencias_personales' => $input['referencias_personales'] ?? ''
         ]);
         
         $clienteId = $pdo->lastInsertId();
