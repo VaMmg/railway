@@ -70,7 +70,7 @@ function handleGet() {
             $stmt->execute([':user_id' => $user['id_usuario']]);
             $caja = $stmt->fetch();
             
-            error_log("Buscando caja para usuario {$user['id_usuario']}: " . ($caja ? "Encontrada (ID: {$caja['id_cajas_usuario']}, Estado: {$caja['estado_caja']})" : "No encontrada"));
+            error_log("Buscando caja para usuario {$user['id_usuario']}: " . ($caja ? "Encontrada (ID: {$caja['id_caja']}, Estado: {$caja['estado_caja']})" : "No encontrada"));
             
             if ($caja) {
                 jsonResponse(true, 'Caja encontrada', ['caja' => $caja]);
@@ -123,7 +123,7 @@ function handleGet() {
             FROM cajas_usuario c
             INNER JOIN usuarios u ON c.id_usuario = u.id_usuario
             INNER JOIN personas p ON u.dni_persona = p.dni
-            WHERE c.id_cajas_usuario = :id
+            WHERE c.id_caja = :id
         ";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([':id' => $id]);
@@ -157,18 +157,17 @@ function handleGet() {
         
         // Para gerentes, mostrar solo la última caja de cada trabajador
         $sql = "
-            SELECT c.id_cajas_usuario, c.hora_apertura, c.saldo_actual, c.estado_caja,
-                   c.hora_cierre, c.fecha_creacion_caja, c.limite_credito, c.habilitada_por_gerente,
-                   c.comentario,
+            SELECT c.id_caja, c.hora_apertura, c.monto_inicial, c.monto_final, c.estado_caja,
+                   c.hora_cierre, c.fecha_creacion_caja, c.observaciones,
                    u.usuario, p.nombres, p.apellido_paterno, u.id_rol
             FROM cajas_usuario c
             INNER JOIN usuarios u ON c.id_usuario = u.id_usuario
             INNER JOIN personas p ON u.dni_persona = p.dni
             INNER JOIN (
-                SELECT id_usuario, MAX(id_cajas_usuario) as ultima_caja
+                SELECT id_usuario, MAX(id_caja) as ultima_caja
                 FROM cajas_usuario
                 GROUP BY id_usuario
-            ) ultima ON c.id_usuario = ultima.id_usuario AND c.id_cajas_usuario = ultima.ultima_caja
+            ) ultima ON c.id_usuario = ultima.id_usuario AND c.id_caja = ultima.ultima_caja
             $where
             ORDER BY c.hora_apertura DESC
             LIMIT :limit OFFSET :offset
@@ -183,21 +182,16 @@ function handleGet() {
         $stmt->execute();
         $cajas = $stmt->fetchAll();
         
-        // Convertir habilitada_por_gerente a booleano
-        foreach ($cajas as &$caja) {
-            $caja['habilitada_por_gerente'] = (bool)$caja['habilitada_por_gerente'];
-        }
-        
         // Contar total (última caja de cada usuario)
         $countSql = "
             SELECT COUNT(*) as total 
             FROM cajas_usuario c 
             INNER JOIN usuarios u ON c.id_usuario = u.id_usuario
             INNER JOIN (
-                SELECT id_usuario, MAX(id_cajas_usuario) as ultima_caja
+                SELECT id_usuario, MAX(id_caja) as ultima_caja
                 FROM cajas_usuario
                 GROUP BY id_usuario
-            ) ultima ON c.id_usuario = ultima.id_usuario AND c.id_cajas_usuario = ultima.ultima_caja
+            ) ultima ON c.id_usuario = ultima.id_usuario AND c.id_caja = ultima.ultima_caja
             $where
         ";
         $countStmt = $pdo->prepare($countSql);
@@ -303,47 +297,20 @@ function handlePost() {
         $idUsuarioAsignado = $input['id_usuario'] ?? $user['id_usuario'];
         
         $saldoInicial = $input['saldo_inicial'] ?? 0;
-        $limiteCredito = $input['limite_credito'] ?? 0;
-        
-        // Determinar si es gerente asignando o trabajador activando
-        $esGerenteAsignando = isset($input['id_usuario']);
         
         try {
             $sql = "
-                INSERT INTO cajas_usuario (id_usuario, limite_credito, hora_apertura, saldo_actual,
-                                         estado_caja, habilitada_por_gerente, fecha_creacion_caja)
-                VALUES (:id_usuario, :limite_credito, NOW(), :saldo_inicial, :estado, :habilitada, NOW())
+                INSERT INTO cajas_usuario (id_usuario, hora_apertura, monto_inicial,
+                                         estado_caja, fecha_creacion_caja)
+                VALUES (:id_usuario, NOW(), :saldo_inicial, 'Abierta', CURDATE())
             ";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
                 ':id_usuario' => $idUsuarioAsignado,
-                ':limite_credito' => $limiteCredito,
-                ':saldo_inicial' => $saldoInicial,
-                ':estado' => $esGerenteAsignando ? 'Cerrada' : 'Abierta',
-                ':habilitada' => $esGerenteAsignando ? 1 : 0
+                ':saldo_inicial' => $saldoInicial
             ]);
             
             $cajaId = $pdo->lastInsertId();
-            
-            // Notificar al gerente si el trabajador abrió su caja
-            if (!$esGerenteAsignando) {
-                $usuarioSql = "SELECT CONCAT(p.nombres, ' ', p.apellido_paterno) as nombre_completo 
-                              FROM usuarios u 
-                              INNER JOIN personas p ON u.dni_persona = p.dni 
-                              WHERE u.id_usuario = :id";
-                $usuarioStmt = $pdo->prepare($usuarioSql);
-                $usuarioStmt->execute([':id' => $idUsuarioAsignado]);
-                $nombreUsuario = $usuarioStmt->fetchColumn();
-                
-                notificarGerente(
-                    $pdo,
-                    'caja_abierta',
-                    "{$nombreUsuario} abrió su caja con saldo inicial de S/ " . number_format($saldoInicial, 2),
-                    $user['id_usuario'],
-                    $cajaId,
-                    'caja'
-                );
-            }
             
             jsonResponse(true, 'Caja asignada exitosamente', ['id_caja' => $cajaId], 201);
             
@@ -351,41 +318,10 @@ function handlePost() {
             jsonResponse(false, 'Error al asignar caja: ' . $e->getMessage(), null, 500);
         }
         
-    } elseif ($action === 'habilitar') {
-        // Solo gerentes pueden habilitar/deshabilitar cajas
-        $roleName = strtolower($user['nombre_rol'] ?? '');
-        $esGerente = strpos($roleName, 'gerente') !== false;
-        $esAdmin = strpos($roleName, 'administrador') !== false;
-        
-        if (!$esGerente && !$esAdmin) {
-            jsonResponse(false, 'Solo gerentes pueden habilitar cajas', null, 403);
-        }
-        
-        $idCaja = $input['id_caja'] ?? null;
-        $habilitar = $input['habilitar'] ?? true;
-        
-        if (!$idCaja) {
-            jsonResponse(false, 'ID de caja requerido', null, 400);
-        }
-        
-        try {
-            $sql = "UPDATE cajas_usuario SET habilitada_por_gerente = :habilitar WHERE id_cajas_usuario = :id";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([
-                ':habilitar' => $habilitar ? 1 : 0,
-                ':id' => $idCaja
-            ]);
-            
-            jsonResponse(true, $habilitar ? 'Caja habilitada exitosamente' : 'Caja deshabilitada exitosamente');
-            
-        } catch (PDOException $e) {
-            jsonResponse(false, 'Error al cambiar habilitación: ' . $e->getMessage(), null, 500);
-        }
-        
     } elseif ($action === 'cerrar') {
         // Cerrar caja
         $idCaja = $input['id_caja'] ?? null;
-        $comentario = $input['comentario'] ?? '';
+        $observaciones = $input['observaciones'] ?? '';
         
         if (!$idCaja) {
             jsonResponse(false, 'ID de caja requerido', null, 400);
@@ -393,7 +329,7 @@ function handlePost() {
         
         try {
             // Verificar que la caja pertenezca al usuario
-            $checkSql = "SELECT id_usuario, estado_caja FROM cajas_usuario WHERE id_cajas_usuario = :id";
+            $checkSql = "SELECT id_usuario, estado_caja, monto_inicial FROM cajas_usuario WHERE id_caja = :id";
             $checkStmt = $pdo->prepare($checkSql);
             $checkStmt->execute([':id' => $idCaja]);
             $caja = $checkStmt->fetch();
@@ -415,39 +351,16 @@ function handlePost() {
                 UPDATE cajas_usuario 
                 SET estado_caja = 'Cerrada',
                     hora_cierre = NOW(),
-                    saldo_final = saldo_actual,
-                    comentario = CONCAT(COALESCE(comentario, ''), ' ', :comentario)
-                WHERE id_cajas_usuario = :id
+                    monto_final = :monto_final,
+                    observaciones = CONCAT(COALESCE(observaciones, ''), ' ', :observaciones)
+                WHERE id_caja = :id
             ";
             $updateStmt = $pdo->prepare($updateSql);
             $updateStmt->execute([
                 ':id' => $idCaja,
-                ':comentario' => $comentario
+                ':monto_final' => $caja['monto_inicial'],
+                ':observaciones' => $observaciones
             ]);
-            
-            // Obtener saldo final para la notificación
-            $saldoSql = "SELECT saldo_final FROM cajas_usuario WHERE id_cajas_usuario = :id";
-            $saldoStmt = $pdo->prepare($saldoSql);
-            $saldoStmt->execute([':id' => $idCaja]);
-            $saldoFinal = $saldoStmt->fetchColumn();
-            
-            // Notificar al gerente
-            $usuarioSql = "SELECT CONCAT(p.nombres, ' ', p.apellido_paterno) as nombre_completo 
-                          FROM usuarios u 
-                          INNER JOIN personas p ON u.dni_persona = p.dni 
-                          WHERE u.id_usuario = :id";
-            $usuarioStmt = $pdo->prepare($usuarioSql);
-            $usuarioStmt->execute([':id' => $user['id_usuario']]);
-            $nombreUsuario = $usuarioStmt->fetchColumn();
-            
-            notificarGerente(
-                $pdo,
-                'caja_cerrada',
-                "{$nombreUsuario} cerró su caja con saldo final de S/ " . number_format($saldoFinal, 2),
-                $user['id_usuario'],
-                $idCaja,
-                'caja'
-            );
             
             jsonResponse(true, 'Caja cerrada exitosamente');
             
@@ -473,7 +386,7 @@ function handlePut() {
     
     // Verificar que la caja pertenezca al usuario (excepto admin/gerente)
     if ($user['id_rol'] == ROLE_TRABAJADOR) {
-        $checkSql = "SELECT id_usuario FROM cajas_usuario WHERE id_cajas_usuario = :id";
+        $checkSql = "SELECT id_usuario FROM cajas_usuario WHERE id_caja = :id";
         $checkStmt = $pdo->prepare($checkSql);
         $checkStmt->execute([':id' => $id]);
         $caja = $checkStmt->fetch();
@@ -483,105 +396,17 @@ function handlePut() {
         }
     }
     
-    $action = $input['action'] ?? '';
-    
-    // Actualizar estado de la caja
-    if ($action === 'actualizar_estado') {
-        $nuevoEstado = $input['estado_caja'] ?? '';
-        
-        if (!in_array($nuevoEstado, ['Abierta', 'Cerrada'])) {
-            jsonResponse(false, 'Estado no válido', null, 400);
-        }
-        
-        try {
-            // Verificar si la caja está habilitada por el gerente antes de permitir abrirla
-            if ($nuevoEstado === 'Abierta') {
-                // 1. Verificar que la caja principal esté abierta
-                $cajaPrincipalSql = "SELECT estado_caja FROM cajas WHERE DATE(fecha_creacion) = CURRENT_DATE ORDER BY hora_apertura DESC LIMIT 1";
-                $cajaPrincipalStmt = $pdo->query($cajaPrincipalSql);
-                $cajaPrincipal = $cajaPrincipalStmt->fetch();
-                
-                if (!$cajaPrincipal || $cajaPrincipal['estado_caja'] !== 'Abierta') {
-                    jsonResponse(false, 'La caja principal debe estar abierta primero. Contacta con tu gerente.', null, 403);
-                }
-                
-                // 2. Verificar que la caja esté habilitada por el gerente
-                $checkSql = "SELECT habilitada_por_gerente FROM cajas_usuario WHERE id_cajas_usuario = :id";
-                $checkStmt = $pdo->prepare($checkSql);
-                $checkStmt->execute([':id' => $id]);
-                $caja = $checkStmt->fetch();
-                
-                if (!$caja || !$caja['habilitada_por_gerente']) {
-                    jsonResponse(false, 'Tu caja debe ser habilitada por el gerente primero', null, 403);
-                }
-            }
-            
-            $sql = "UPDATE cajas_usuario SET estado_caja = :estado";
-            
-            // Si se está abriendo, actualizar hora_apertura
-            if ($nuevoEstado === 'Abierta') {
-                $sql .= ", hora_apertura = NOW(), hora_cierre = NULL";
-            }
-            // Si se está cerrando, actualizar hora_cierre y saldo_final
-            elseif ($nuevoEstado === 'Cerrada') {
-                $sql .= ", hora_cierre = NOW(), saldo_final = saldo_actual";
-            }
-            
-            $sql .= " WHERE id_cajas_usuario = :id";
-            
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([
-                ':estado' => $nuevoEstado,
-                ':id' => $id
-            ]);
-            
-            jsonResponse(true, 'Estado actualizado exitosamente');
-            return;
-            
-        } catch (PDOException $e) {
-            jsonResponse(false, 'Error al actualizar estado: ' . $e->getMessage(), null, 500);
-        }
-    }
-    
     try {
         $updateFields = [];
         $params = [':id' => $id];
         
-        if (isset($input['tipo_transaccion']) && isset($input['monto'])) {
-            $monto = (float)$input['monto'];
-            $tipo = $input['tipo_transaccion'];
-            
-            // Obtener saldo actual
-            $saldoSql = "SELECT saldo_actual FROM cajas_usuario WHERE id_cajas_usuario = :id";
-            $saldoStmt = $pdo->prepare($saldoSql);
-            $saldoStmt->execute([':id' => $id]);
-            $saldoActual = $saldoStmt->fetch()['saldo_actual'];
-            
-            $nuevoSaldo = $saldoActual;
-            if ($tipo === 'Ingreso') {
-                $nuevoSaldo += $monto;
-            } elseif ($tipo === 'Egreso') {
-                if ($saldoActual < $monto) {
-                    jsonResponse(false, 'Saldo insuficiente', null, 400);
-                }
-                $nuevoSaldo -= $monto;
-            }
-            
-            $updateFields[] = "saldo_actual = :saldo_actual";
-            $updateFields[] = "tipo_transaccion = :tipo_transaccion";
-            $updateFields[] = "monto = :monto";
-            $params[':saldo_actual'] = $nuevoSaldo;
-            $params[':tipo_transaccion'] = $tipo;
-            $params[':monto'] = $monto;
-        }
-        
-        if (isset($input['comentario'])) {
-            $updateFields[] = "comentario = :comentario";
-            $params[':comentario'] = $input['comentario'];
+        if (isset($input['observaciones'])) {
+            $updateFields[] = "observaciones = :observaciones";
+            $params[':observaciones'] = $input['observaciones'];
         }
         
         if (!empty($updateFields)) {
-            $sql = "UPDATE cajas_usuario SET " . implode(', ', $updateFields) . " WHERE id_cajas_usuario = :id";
+            $sql = "UPDATE cajas_usuario SET " . implode(', ', $updateFields) . " WHERE id_caja = :id";
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
         }
@@ -607,10 +432,10 @@ function handleDelete() {
         // No eliminar, solo cerrar si está abierta
         $sql = "
             UPDATE cajas_usuario 
-            SET estado_caja = 'Cancelada',
+            SET estado_caja = 'Cerrada',
                 hora_cierre = NOW(),
-                comentario = COALESCE(comentario, '') || ' - Cancelada por: ' || :user_name
-            WHERE id_cajas_usuario = :id
+                observaciones = CONCAT(COALESCE(observaciones, ''), ' - Cancelada por: ', :user_name)
+            WHERE id_caja = :id
         ";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
