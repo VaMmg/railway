@@ -99,7 +99,7 @@ const CreditosPage = () => {
       const res = await clientsService.getAll();
       const clientesList = res?.data?.clientes || res?.data || res?.clientes || [];
       // Filtrar solo clientes activos
-      return clientesList.filter(cliente => cliente.estado === 'Activo');
+      return clientesList.filter(cliente => cliente.estado_cliente === 'Activo' || cliente.estado === 'Activo');
     }
   });
 
