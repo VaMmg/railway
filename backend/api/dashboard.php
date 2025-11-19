@@ -20,12 +20,12 @@ try {
     $stats = [];
     
     // Total de clientes
-    $clientesSql = "SELECT COUNT(*) as total, COUNT(CASE WHEN estado = 'Activo' THEN 1 END) as activos FROM clientes";
+    $clientesSql = "SELECT COUNT(*) as total FROM clientes";
     $clientesStmt = $pdo->query($clientesSql);
     $clientesData = $clientesStmt->fetch();
     $stats['clientes'] = [
         'total' => (int)$clientesData['total'],
-        'activos' => (int)$clientesData['activos']
+        'activos' => (int)$clientesData['total'] // Todos los clientes en la tabla están activos
     ];
     
     // Total de créditos
