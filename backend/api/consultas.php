@@ -101,9 +101,12 @@ function buscarCliente($pdo) {
         $stmt->execute([':termino' => "%$termino%"]);
         $clientes = $stmt->fetchAll();
         
-        // Si no hay clientes pero la persona existe, dar un mensaje más específico
-        if (count($clientes) === 0 && $personaExiste) {
-            jsonResponse(false, 'La persona existe pero no está registrada como cliente. Debe registrarla en la sección de Clientes primero.', [], 404);
+        // Si no hay clientes, devolver array vacío con mensaje informativo
+        if (count($clientes) === 0) {
+            $mensaje = $personaExiste 
+                ? 'La persona existe pero no está registrada como cliente.' 
+                : 'No se encontraron resultados para la búsqueda.';
+            jsonResponse(true, $mensaje, []);
             return;
         }
         
