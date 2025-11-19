@@ -230,13 +230,23 @@ function handlePost() {
         }
         
         try {
-            // Verificar que no haya cajas de trabajadores abiertas
-            $checkSql = "SELECT COUNT(*) as count FROM cajas_usuario WHERE estado_caja = 'Abierta' AND DATE(fecha_creacion_caja) = CURRENT_DATE";
+            // VALIDACIÓN: Gerente NO puede cerrar la caja principal si hay cajas de trabajadores abiertas
+            $checkSql = "
+                SELECT COUNT(*) as count, 
+                       GROUP_CONCAT(CONCAT(p.nombres, ' ', p.apellido_paterno) SEPARATOR ', ') as trabajadores
+                FROM cajas_usuario cu
+                INNER JOIN usuarios u ON cu.id_usuario = u.id_usuario
+                INNER JOIN personas p ON u.dni_persona = p.dni
+                WHERE cu.estado_caja = 'Abierta' 
+                AND DATE(cu.fecha_creacion_caja) = CURRENT_DATE
+            ";
             $checkStmt = $pdo->query($checkSql);
             $result = $checkStmt->fetch();
             
             if ($result['count'] > 0) {
-                jsonResponse(false, 'No puedes cerrar la caja principal mientras haya cajas de trabajadores abiertas', null, 400);
+                $mensaje = "No puedes cerrar la caja principal mientras haya cajas de trabajadores abiertas. ";
+                $mensaje .= "Trabajadores con cajas abiertas: " . $result['trabajadores'];
+                jsonResponse(false, $mensaje, null, 400);
             }
             
             $sql = "
@@ -414,6 +424,17 @@ function handlePut() {
             // Si se está abriendo, verificar que esté habilitada
             if ($nuevoEstado === 'Abierta' && !$caja['habilitada_por_gerente']) {
                 jsonResponse(false, 'Tu caja debe ser habilitada por el gerente primero', null, 403);
+            }
+            
+            // VALIDACIÓN: Trabajador NO puede abrir su caja si la caja principal NO está abierta
+            if ($nuevoEstado === 'Abierta') {
+                $cajaPrincipalSql = "SELECT estado_caja FROM cajas WHERE DATE(fecha_creacion) = CURRENT_DATE ORDER BY hora_apertura DESC LIMIT 1";
+                $cajaPrincipalStmt = $pdo->query($cajaPrincipalSql);
+                $cajaPrincipal = $cajaPrincipalStmt->fetch();
+                
+                if (!$cajaPrincipal || $cajaPrincipal['estado_caja'] !== 'Abierta') {
+                    jsonResponse(false, 'No puedes abrir tu caja porque la caja principal no está abierta. Contacta con tu gerente.', null, 403);
+                }
             }
             
             $sql = "UPDATE cajas_usuario SET estado_caja = :estado";
