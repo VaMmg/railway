@@ -746,8 +746,6 @@ function aprobarCredito($creditoId, $user, $pdo) {
         $updateSql = "
             UPDATE creditos 
             SET estado_credito = 'Aprobado', 
-                usuario_aprobacion = :usuario_aprobacion, 
-                fecha_aprobacion = NOW(),
                 fecha_otorgamiento = DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Lima')),
                 fecha_vencimiento = DATE_ADD(DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Lima')), INTERVAL :plazos_meses MONTH)
             WHERE id_credito = :id
@@ -755,7 +753,6 @@ function aprobarCredito($creditoId, $user, $pdo) {
         $updateStmt = $pdo->prepare($updateSql);
         $updateStmt->execute([
             ':id' => $creditoId,
-            ':usuario_aprobacion' => $user['id'],
             ':plazos_meses' => $credito['plazos_meses']
         ]);
         
@@ -829,15 +826,12 @@ function rechazarCredito($creditoId, $motivo, $user, $pdo) {
         // Actualizar estado a desaprobado
         $updateSql = "
             UPDATE creditos 
-            SET estado_credito = 'Desaprobado', usuario_aprobacion = :usuario_aprobacion, 
-                fecha_aprobacion = NOW(), motivo_rechazo = :motivo
+            SET estado_credito = 'Rechazado'
             WHERE id_credito = :id AND estado_credito IN ('Pendiente', 'Pendiente_Aprobacion')
         ";
         $updateStmt = $pdo->prepare($updateSql);
         $updateStmt->execute([
-            ':id' => $creditoId,
-            ':usuario_aprobacion' => $user['id'],
-            ':motivo' => $motivo
+            ':id' => $creditoId
         ]);
         
         if ($updateStmt->rowCount() === 0) {
@@ -1494,8 +1488,8 @@ function handleGetContrato($pdo, $idCredito, $user) {
             return;
         }
         
-        // Obtener información del acreedor (usuario que aprobó o creó el crédito)
-        $idUsuarioAcreedor = $credito['usuario_aprobacion'] ?? $credito['usuario_creacion'] ?? $user['id'];
+        // Obtener información del acreedor (usuario que creó el crédito)
+        $idUsuarioAcreedor = $credito['usuario_creacion'] ?? $user['id'];
         $sqlAcreedor = "
             SELECT u.id_usuario, u.usuario,
                    p.nombres, p.apellido_paterno, p.apellido_materno, p.dni, p.estado_civil,
