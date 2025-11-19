@@ -79,7 +79,7 @@ try {
         FROM cuotas cu
         INNER JOIN creditos c ON cu.id_credito = c.id_credito
         WHERE cu.fecha_programada < CURDATE()
-        AND cu.estado = 'Pendiente'
+        AND cu.estado_cuota = 'Pendiente'
         AND c.estado_credito = 'Vigente'
     ";
     $cuotasVencidasStmt = $pdo->query($cuotasVencidasSql);
@@ -96,7 +96,7 @@ try {
         FROM cuotas cu
         INNER JOIN creditos c ON cu.id_credito = c.id_credito
         WHERE cu.fecha_programada BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-        AND cu.estado = 'Pendiente'
+        AND cu.estado_cuota = 'Pendiente'
         AND c.estado_credito = 'Vigente'
     ";
     $proximasCuotasStmt = $pdo->query($proximasCuotasSql);
