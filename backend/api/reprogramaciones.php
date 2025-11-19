@@ -228,7 +228,7 @@ function handlePost() {
         
         // Si no es gerente, registrar en bitácora y notificar al gerente
         $bitacoraSql = "
-            INSERT INTO bitacora_operaciones (id_credito, tipo_operacion, descripcion, id_usuario, fecha)
+            INSERT INTO bitacora_operaciones (id_credito, tipo_operacion, descripcion, id_usuario, fecha_operacion)
             VALUES (:id_credito, 'Reprogramación Solicitada', :descripcion, :usuario, NOW())
         ";
         $bitacoraStmt = $pdo->prepare($bitacoraSql);
@@ -424,7 +424,7 @@ function aprobarReprogramacion($id, $user, $pdo) {
         
         // Registrar en bitácora
         $bitacoraSql = "
-            INSERT INTO bitacora_operaciones (id_credito, tipo_operacion, descripcion, id_usuario, fecha)
+            INSERT INTO bitacora_operaciones (id_credito, tipo_operacion, descripcion, id_usuario, fecha_operacion)
             VALUES (:id_credito, 'Reprogramación Aprobada', 'Reprogramación aprobada y aplicada', :usuario, NOW())
         ";
         $bitacoraStmt = $pdo->prepare($bitacoraSql);
@@ -502,7 +502,7 @@ function rechazarReprogramacion($id, $motivo, $user, $pdo) {
         
         // Registrar en bitácora
         $bitacoraSql = "
-            INSERT INTO bitacora_operaciones (id_credito, tipo_operacion, descripcion, id_usuario, fecha)
+            INSERT INTO bitacora_operaciones (id_credito, tipo_operacion, descripcion, id_usuario, fecha_operacion)
             VALUES (:id_credito, 'Reprogramación Rechazada', :descripcion, :usuario, NOW())
         ";
         $bitacoraStmt = $pdo->prepare($bitacoraSql);
