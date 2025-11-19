@@ -3,7 +3,6 @@
 require_once '../config/conexion.php';
 require_once '../config/cors.php';
 require_once '../config/auth.php';
-require_once '../helpers/notificaciones_helper.php';
 
 setCorsHeaders();
 
@@ -28,9 +27,8 @@ switch ($method) {
 }
 
 function handleGet() {
-    $user = requireTrabajador(); // Trabajadores y superiores pueden ver cajas
+    $user = requireTrabajador();
     $pdo = getPDO();
-    $auth = new AuthSystem();
     
     // Obtener estado de la caja principal
     if (isset($_GET['action']) && $_GET['action'] === 'caja_principal') {
@@ -58,7 +56,6 @@ function handleGet() {
     // Obtener caja del trabajador actual
     if (isset($_GET['action']) && $_GET['action'] === 'mi_caja') {
         try {
-            // Buscar la caja más reciente del usuario (cualquier estado excepto eliminada)
             $sql = "
                 SELECT c.*
                 FROM cajas_usuario c
@@ -70,48 +67,14 @@ function handleGet() {
             $stmt->execute([':user_id' => $user['id_usuario']]);
             $caja = $stmt->fetch();
             
-            error_log("Buscando caja para usuario {$user['id_usuario']}: " . ($caja ? "Encontrada (ID: {$caja['id_caja']}, Estado: {$caja['estado_caja']})" : "No encontrada"));
-            
             if ($caja) {
                 jsonResponse(true, 'Caja encontrada', ['caja' => $caja]);
             } else {
                 jsonResponse(true, 'No tienes caja asignada', ['caja' => null]);
             }
         } catch (PDOException $e) {
-            error_log("Error al obtener caja: " . $e->getMessage());
             jsonResponse(false, 'Error al obtener caja: ' . $e->getMessage(), null, 500);
         }
-        return;
-    }
-    
-    if (isset($_GET['status'])) {
-        // Obtener estado de cajas
-        $response = [
-            'main_cash_open' => $auth->isMainCashOpen(),
-            'user_can_open' => false,
-            'user_cash_open' => false,
-            'reason' => ''
-        ];
-        
-        if ($user['id_rol'] == ROLE_TRABAJADOR) {
-            $canOpen = $auth->canOpenWorkerCash($user['id_usuario']);
-            $response['user_can_open'] = $canOpen['can_open'];
-            $response['reason'] = $canOpen['reason'];
-            
-            // Verificar si ya tiene caja abierta
-            $sql = "
-                SELECT COUNT(*) as count
-                FROM cajas_usuario
-                WHERE id_usuario = :user_id 
-                AND estado_caja = 'Abierta'
-                AND DATE(fecha_creacion_caja) = CURRENT_DATE
-            ";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([':user_id' => $user['id_usuario']]);
-            $response['user_cash_open'] = $stmt->fetch()['count'] > 0;
-        }
-        
-        jsonResponse(true, 'Estado de cajas obtenido', $response);
         return;
     }
     
@@ -123,7 +86,7 @@ function handleGet() {
             FROM cajas_usuario c
             INNER JOIN usuarios u ON c.id_usuario = u.id_usuario
             INNER JOIN personas p ON u.dni_persona = p.dni
-            WHERE c.id_caja = :id
+            WHERE c.id_cajas_usuario = :id
         ";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([':id' => $id]);
@@ -135,19 +98,13 @@ function handleGet() {
             jsonResponse(false, 'Caja no encontrada', null, 404);
         }
     } else {
-        // Obtener cajas con filtros
+        // Obtener todas las cajas (para gerentes)
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
         $offset = ($page - 1) * $limit;
         
         $where = "WHERE 1=1";
         $params = [];
-        
-        // Filtro por fecha (opcional)
-        if (isset($_GET['fecha'])) {
-            $where .= " AND DATE(c.fecha_creacion_caja) = :fecha";
-            $params[':fecha'] = $_GET['fecha'];
-        }
         
         // Filtro por usuario (para trabajadores solo sus cajas)
         if ($user['id_rol'] == ROLE_TRABAJADOR) {
@@ -155,19 +112,20 @@ function handleGet() {
             $params[':user_id'] = $user['id_usuario'];
         }
         
-        // Para gerentes, mostrar solo la última caja de cada trabajador
+        // Mostrar solo la última caja de cada trabajador
         $sql = "
-            SELECT c.id_caja, c.hora_apertura, c.monto_inicial, c.monto_final, c.estado_caja,
-                   c.hora_cierre, c.fecha_creacion_caja, c.observaciones,
+            SELECT c.id_cajas_usuario, c.hora_apertura, c.saldo_actual, c.estado_caja,
+                   c.hora_cierre, c.fecha_creacion_caja, c.limite_credito, c.habilitada_por_gerente,
+                   c.comentario, c.saldo_final,
                    u.usuario, p.nombres, p.apellido_paterno, u.id_rol
             FROM cajas_usuario c
             INNER JOIN usuarios u ON c.id_usuario = u.id_usuario
             INNER JOIN personas p ON u.dni_persona = p.dni
             INNER JOIN (
-                SELECT id_usuario, MAX(id_caja) as ultima_caja
+                SELECT id_usuario, MAX(id_cajas_usuario) as ultima_caja
                 FROM cajas_usuario
                 GROUP BY id_usuario
-            ) ultima ON c.id_usuario = ultima.id_usuario AND c.id_caja = ultima.ultima_caja
+            ) ultima ON c.id_usuario = ultima.id_usuario AND c.id_cajas_usuario = ultima.ultima_caja
             $where
             ORDER BY c.hora_apertura DESC
             LIMIT :limit OFFSET :offset
@@ -182,16 +140,21 @@ function handleGet() {
         $stmt->execute();
         $cajas = $stmt->fetchAll();
         
-        // Contar total (última caja de cada usuario)
+        // Convertir habilitada_por_gerente a booleano
+        foreach ($cajas as &$caja) {
+            $caja['habilitada_por_gerente'] = (bool)$caja['habilitada_por_gerente'];
+        }
+        
+        // Contar total
         $countSql = "
             SELECT COUNT(*) as total 
             FROM cajas_usuario c 
             INNER JOIN usuarios u ON c.id_usuario = u.id_usuario
             INNER JOIN (
-                SELECT id_usuario, MAX(id_caja) as ultima_caja
+                SELECT id_usuario, MAX(id_cajas_usuario) as ultima_caja
                 FROM cajas_usuario
                 GROUP BY id_usuario
-            ) ultima ON c.id_usuario = ultima.id_usuario AND c.id_caja = ultima.ultima_caja
+            ) ultima ON c.id_usuario = ultima.id_usuario AND c.id_cajas_usuario = ultima.ultima_caja
             $where
         ";
         $countStmt = $pdo->prepare($countSql);
@@ -215,9 +178,8 @@ function handleGet() {
 
 function handlePost() {
     global $input;
-    $user = requireTrabajador(); // Trabajadores y superiores pueden abrir cajas
+    $user = requireTrabajador();
     $pdo = getPDO();
-    $auth = new AuthSystem();
     
     $action = $input['action'] ?? 'abrir';
     
@@ -238,7 +200,7 @@ function handlePost() {
             jsonResponse(false, 'Ya existe una caja principal abierta hoy', null, 400);
         }
         
-        $saldoInicial = $input['saldo_inicial'] ?? 0;
+        $saldoInicial = $input['saldo_inicial'] ?? 5000;
         
         try {
             $sql = "
@@ -291,22 +253,33 @@ function handlePost() {
         }
         
     } elseif ($action === 'abrir') {
-        // Obtener el ID del usuario al que se le asignará la caja
-        // Si viene id_usuario en el input, es porque un gerente está asignando (usar ese)
-        // Si no viene, es porque el usuario está abriendo su propia caja (usar el del token)
-        $idUsuarioAsignado = $input['id_usuario'] ?? $user['id_usuario'];
+        // Asignar caja a un trabajador (solo gerentes)
+        $roleName = strtolower($user['nombre_rol'] ?? '');
+        $esGerente = strpos($roleName, 'gerente') !== false;
+        $esAdmin = strpos($roleName, 'administrador') !== false;
         
+        if (!$esGerente && !$esAdmin) {
+            jsonResponse(false, 'Solo gerentes pueden asignar cajas', null, 403);
+        }
+        
+        $idUsuarioAsignado = $input['id_usuario'] ?? null;
         $saldoInicial = $input['saldo_inicial'] ?? 0;
+        $limiteCredito = $input['limite_credito'] ?? 5000;
+        
+        if (!$idUsuarioAsignado) {
+            jsonResponse(false, 'ID de usuario requerido', null, 400);
+        }
         
         try {
             $sql = "
-                INSERT INTO cajas_usuario (id_usuario, hora_apertura, monto_inicial,
-                                         estado_caja, fecha_creacion_caja)
-                VALUES (:id_usuario, NOW(), :saldo_inicial, 'Abierta', CURDATE())
+                INSERT INTO cajas_usuario (id_usuario, limite_credito, saldo_actual, estado_caja, 
+                                          habilitada_por_gerente, fecha_creacion_caja, hora_apertura)
+                VALUES (:id_usuario, :limite_credito, :saldo_inicial, 'Cerrada', 1, CURDATE(), NOW())
             ";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
                 ':id_usuario' => $idUsuarioAsignado,
+                ':limite_credito' => $limiteCredito,
                 ':saldo_inicial' => $saldoInicial
             ]);
             
@@ -318,10 +291,41 @@ function handlePost() {
             jsonResponse(false, 'Error al asignar caja: ' . $e->getMessage(), null, 500);
         }
         
-    } elseif ($action === 'cerrar') {
-        // Cerrar caja
+    } elseif ($action === 'habilitar') {
+        // Habilitar/deshabilitar caja (solo gerentes)
+        $roleName = strtolower($user['nombre_rol'] ?? '');
+        $esGerente = strpos($roleName, 'gerente') !== false;
+        $esAdmin = strpos($roleName, 'administrador') !== false;
+        
+        if (!$esGerente && !$esAdmin) {
+            jsonResponse(false, 'Solo gerentes pueden habilitar cajas', null, 403);
+        }
+        
         $idCaja = $input['id_caja'] ?? null;
-        $observaciones = $input['observaciones'] ?? '';
+        $habilitar = $input['habilitar'] ?? true;
+        
+        if (!$idCaja) {
+            jsonResponse(false, 'ID de caja requerido', null, 400);
+        }
+        
+        try {
+            $sql = "UPDATE cajas_usuario SET habilitada_por_gerente = :habilitar WHERE id_cajas_usuario = :id";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':habilitar' => $habilitar ? 1 : 0,
+                ':id' => $idCaja
+            ]);
+            
+            jsonResponse(true, $habilitar ? 'Caja habilitada exitosamente' : 'Caja deshabilitada exitosamente');
+            
+        } catch (PDOException $e) {
+            jsonResponse(false, 'Error al cambiar habilitación: ' . $e->getMessage(), null, 500);
+        }
+        
+    } elseif ($action === 'cerrar') {
+        // Cerrar caja (trabajador cierra su propia caja)
+        $idCaja = $input['id_caja'] ?? null;
+        $comentario = $input['comentario'] ?? '';
         
         if (!$idCaja) {
             jsonResponse(false, 'ID de caja requerido', null, 400);
@@ -329,7 +333,7 @@ function handlePost() {
         
         try {
             // Verificar que la caja pertenezca al usuario
-            $checkSql = "SELECT id_usuario, estado_caja, monto_inicial FROM cajas_usuario WHERE id_caja = :id";
+            $checkSql = "SELECT id_usuario, estado_caja, saldo_actual FROM cajas_usuario WHERE id_cajas_usuario = :id";
             $checkStmt = $pdo->prepare($checkSql);
             $checkStmt->execute([':id' => $idCaja]);
             $caja = $checkStmt->fetch();
@@ -351,15 +355,14 @@ function handlePost() {
                 UPDATE cajas_usuario 
                 SET estado_caja = 'Cerrada',
                     hora_cierre = NOW(),
-                    monto_final = :monto_final,
-                    observaciones = CONCAT(COALESCE(observaciones, ''), ' ', :observaciones)
-                WHERE id_caja = :id
+                    saldo_final = saldo_actual,
+                    comentario = CONCAT(COALESCE(comentario, ''), ' ', :comentario)
+                WHERE id_cajas_usuario = :id
             ";
             $updateStmt = $pdo->prepare($updateSql);
             $updateStmt->execute([
                 ':id' => $idCaja,
-                ':monto_final' => $caja['monto_inicial'],
-                ':observaciones' => $observaciones
+                ':comentario' => $comentario
             ]);
             
             jsonResponse(true, 'Caja cerrada exitosamente');
@@ -383,30 +386,72 @@ function handlePut() {
     }
     
     $id = $_GET['id'];
+    $action = $input['action'] ?? '';
     
-    // Verificar que la caja pertenezca al usuario (excepto admin/gerente)
-    if ($user['id_rol'] == ROLE_TRABAJADOR) {
-        $checkSql = "SELECT id_usuario FROM cajas_usuario WHERE id_caja = :id";
-        $checkStmt = $pdo->prepare($checkSql);
-        $checkStmt->execute([':id' => $id]);
-        $caja = $checkStmt->fetch();
+    // Actualizar estado de la caja (trabajador activa su caja)
+    if ($action === 'actualizar_estado') {
+        $nuevoEstado = $input['estado_caja'] ?? '';
         
-        if (!$caja || $caja['id_usuario'] != $user['id_usuario']) {
-            jsonResponse(false, 'No tienes permisos para editar esta caja', null, 403);
+        if (!in_array($nuevoEstado, ['Abierta', 'Cerrada'])) {
+            jsonResponse(false, 'Estado no válido', null, 400);
         }
+        
+        try {
+            // Verificar que la caja pertenezca al usuario
+            $checkSql = "SELECT id_usuario, habilitada_por_gerente FROM cajas_usuario WHERE id_cajas_usuario = :id";
+            $checkStmt = $pdo->prepare($checkSql);
+            $checkStmt->execute([':id' => $id]);
+            $caja = $checkStmt->fetch();
+            
+            if (!$caja) {
+                jsonResponse(false, 'Caja no encontrada', null, 404);
+            }
+            
+            if ($caja['id_usuario'] != $user['id_usuario']) {
+                jsonResponse(false, 'No tienes permisos para modificar esta caja', null, 403);
+            }
+            
+            // Si se está abriendo, verificar que esté habilitada
+            if ($nuevoEstado === 'Abierta' && !$caja['habilitada_por_gerente']) {
+                jsonResponse(false, 'Tu caja debe ser habilitada por el gerente primero', null, 403);
+            }
+            
+            $sql = "UPDATE cajas_usuario SET estado_caja = :estado";
+            
+            if ($nuevoEstado === 'Abierta') {
+                $sql .= ", hora_apertura = NOW(), hora_cierre = NULL";
+            } elseif ($nuevoEstado === 'Cerrada') {
+                $sql .= ", hora_cierre = NOW(), saldo_final = saldo_actual";
+            }
+            
+            $sql .= " WHERE id_cajas_usuario = :id";
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':estado' => $nuevoEstado,
+                ':id' => $id
+            ]);
+            
+            jsonResponse(true, 'Estado actualizado exitosamente');
+            
+        } catch (PDOException $e) {
+            jsonResponse(false, 'Error al actualizar estado: ' . $e->getMessage(), null, 500);
+        }
+        return;
     }
     
+    // Actualizar otros campos
     try {
         $updateFields = [];
         $params = [':id' => $id];
         
-        if (isset($input['observaciones'])) {
-            $updateFields[] = "observaciones = :observaciones";
-            $params[':observaciones'] = $input['observaciones'];
+        if (isset($input['comentario'])) {
+            $updateFields[] = "comentario = :comentario";
+            $params[':comentario'] = $input['comentario'];
         }
         
         if (!empty($updateFields)) {
-            $sql = "UPDATE cajas_usuario SET " . implode(', ', $updateFields) . " WHERE id_caja = :id";
+            $sql = "UPDATE cajas_usuario SET " . implode(', ', $updateFields) . " WHERE id_cajas_usuario = :id";
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
         }
@@ -419,7 +464,7 @@ function handlePut() {
 }
 
 function handleDelete() {
-    $user = requireGerente(); // Solo gerentes y admin pueden eliminar cajas
+    $user = requireGerente();
     $pdo = getPDO();
     
     if (!isset($_GET['id'])) {
@@ -429,28 +474,19 @@ function handleDelete() {
     $id = $_GET['id'];
     
     try {
-        // No eliminar, solo cerrar si está abierta
-        $sql = "
-            UPDATE cajas_usuario 
-            SET estado_caja = 'Cerrada',
-                hora_cierre = NOW(),
-                observaciones = CONCAT(COALESCE(observaciones, ''), ' - Cancelada por: ', :user_name)
-            WHERE id_caja = :id
-        ";
+        // Eliminar la caja
+        $sql = "DELETE FROM cajas_usuario WHERE id_cajas_usuario = :id";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            ':id' => $id,
-            ':user_name' => $user['nombres'] . ' ' . $user['apellido_paterno']
-        ]);
+        $stmt->execute([':id' => $id]);
         
         if ($stmt->rowCount() > 0) {
-            jsonResponse(true, 'Caja cancelada exitosamente');
+            jsonResponse(true, 'Caja eliminada exitosamente');
         } else {
             jsonResponse(false, 'Caja no encontrada', null, 404);
         }
         
     } catch (PDOException $e) {
-        jsonResponse(false, 'Error al cancelar caja: ' . $e->getMessage(), null, 500);
+        jsonResponse(false, 'Error al eliminar caja: ' . $e->getMessage(), null, 500);
     }
 }
 ?>
